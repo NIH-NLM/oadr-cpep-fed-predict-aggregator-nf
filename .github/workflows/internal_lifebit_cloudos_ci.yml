@@ -1,0 +1,45 @@
+name: CloudOS CI test
+# This workflow is triggered on PRs of type review_requested or ready_for_review, against dev or main
+# If you need more info: https://github.com/lifebit-ai/action-cloudos-cli
+#TODO change the name of the pipeline from "subworkflow_template" to your pipeline name
+#TODO This workflow works on the internal staging lifebit CloudOS workspace. Change that accordignly (or add more if needed)!
+
+on:
+  pull_request:
+    types: [review_requested, ready_for_review]
+    branches:
+      - prod
+      - dev
+  workflow_dispatch:
+
+jobs:
+  federated-agggregation:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profiles:
+          [
+            "test_ci_input",
+          ]
+      fail-fast: false
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Submit lifebit-platform-federated-aggregation job to CloudOS using cloudos-cli
+        id: lifebit-platform-federated-aggregation
+        uses: lifebit-ai/action-cloudos-cli@0.3.6
+        with:
+          apikey: ${{ secrets.CLOUDOS_TOKEN }}
+          cloudos_url: "https://cloudos.lifebit.ai"
+          workspace_id: ${{ secrets.CLOUDOS_WORKSPACE_ID }}
+          project_name: "test"
+          workflow_name: "lp-federated-aggregation"
+          nextflow_profile: "${{ matrix.profiles }}"
+          git_commit: "${{ github.event.pull_request.head.sha }}"
+          job_name: "lp-federated-aggregation_${{ github.event.pull_request.head.sha }}"
+          instance_type: "c4.large"
+          instance_disk: "40"
+          cost_limit: ${{ secrets.GLOBAL_CLOUDOS_JOB_COST_LIMIT }}
+          cloudos_cli_flags: "--wait-completion"
