@@ -1,11 +1,14 @@
 # oadr-cpep-fed-predict-aggregator-nf
 
 The **coordinator (aggregator) workflow** for federated prediction of residual
-beta-cell function (C-peptide AUC) in Type 1 Diabetes. It runs on the Lifebit
-platform, collects the outputs each institution produced with
-**oadr-cpep-fed-predict-site-nf**, and combines them. Only model parameters —
-feature lists, coefficient vectors, trained forests — are read. No subject-level
-data is ever pooled.
+beta-cell function (C-peptide AUC) in Type 1 Diabetes. It collects the parameter
+files each institution produced with **oadr-cpep-fed-predict-site-nf** and combines
+them. Only model parameters — feature lists, coefficient vectors, trained forests —
+are read; no subject-level data is ever pooled.
+
+Same clean shape as the site workflow: each step is a **single-function Nextflow
+module** calling the `oadr-cpep` CLI, invoked directly from `main.nf`, all on the
+shared `ghcr.io/nih-nlm/oadr-cpep` image.
 
 ## Where it sits in the round trip
 
@@ -22,10 +25,11 @@ The aggregator is the `AGG` half. It is invoked twice — once per phase — gat
 ## Two phases (`--phase`)
 
 **Phase 1 — consensus** (`--phase consensus`): tallies the
-`*_selected_features.csv` staged from every site and keeps features selected by
-at least a threshold number of sites (default: majority, `n/2 + 1`; override with
+`*_selected_features.csv` from every site and keeps features selected by at least a
+threshold number of sites (default: majority, `n/2 + 1`; override with
 `--min_sites`). Emits `consensus_features.csv` (which the sites then fit on) plus
-`feature_selection_tally.csv` for transparency.
+`feature_selection_tally.csv` for transparency. `--from_site SDY524` instead uses
+one site's selection *as* the consensus (single-site, bespoke).
 
 **Phase 2 — aggregate** (`--phase aggregate`): combines the site parameter files:
 - Ridge / LASSO coefficient vectors → one federated vector per method, by
@@ -33,50 +37,67 @@ at least a threshold number of sites (default: majority, `n/2 + 1`; override wit
   `mean`).
 - Random Forests → a union-of-forests ensemble (`federated_rf_union.pkl`).
 
-## Input — the design file
+The `from-<src>` and `panel` tags of the output are **derived from the input
+files' own provenance columns**; panels and feature sources are never mixed
+(mismatched inputs are an error). Non-vector CSVs among the inputs (e.g. a
+`*_fit_metrics.csv`) are ignored.
 
-As with any Lifebit aggregation pipeline, `--design_file` is a CSV whose first
-column points at each site job's results folder. `STAGE_FILES` collects those
-folders; the phase process then reads the relevant artifacts (`*_selected_features.csv`
-for consensus, `*_vector.csv` / `*_rf.pkl` for aggregate) recursively from the
-staged tree.
+## Input
+
+`--input_files` is a glob Nextflow uses only to **gather** the per-site files into
+a channel; each file is then handed to the CLI **explicitly** — one
+`--features <file>` (consensus) or `--vector <file>` (aggregate) per file, so no
+directory ever reaches the CLI. Point it at the per-site selections (consensus) or
+the per-site vectors/forests (aggregate):
 
 ```bash
-# Phase 1
-nextflow run main.nf --design_file sites.csv --phase consensus
+# Phase 1 — consensus (per-site *_selected_features.csv)
+nextflow run main.nf -profile local --phase consensus --min_sites 1 \
+  --input_files 'results/**/*_selected_features.csv'
 
-# Phase 2
-nextflow run main.nf --design_file sites.csv --phase aggregate --aggregation fedavg
+# Phase 2 — aggregate (per-site *_vector.csv + *_rf.pkl; metrics CSVs are ignored)
+nextflow run main.nf -profile local --phase aggregate --aggregation fedavg \
+  --input_files 'results/**/*_from-SDY524_panelB_*'
 ```
+
+## Test locally on a Mac (no Docker)
+
+```bash
+conda env create -f environment.yml
+conda activate oadr-cpep-nf
+pip install -e ../oadr-cpep          # the sibling package (editable)
+nextflow run main.nf -profile local --phase aggregate --input_files '.../*_vector.csv'
+```
+
+`-profile local` disables Docker and runs the `oadr-cpep` CLI from the env; drop
+it for the containerized run (Lifebit / the published image).
 
 ## The container
 
-Both workflows share one image, `ghcr.io/nih-nlm/oadr-cpep`, built from
-`container/oadr-cpep/` in the **site** repo. It provides `oadr-cpep-cli`; the
-aggregator uses its `consensus-features` and `aggregate-vectors` subcommands.
+Every process runs the shared **`ghcr.io/nih-nlm/oadr-cpep`** image (the same one
+the site workflow uses), which provides the `oadr-cpep` CLI — here the
+`consensus-features` and `aggregate-vectors` subcommands. The image is built and
+published by the [oadr-cpep](https://github.com/NIH-NLM/oadr-cpep) package repo;
+this workflow only references it (`params.container`).
 
 ## Parameters
 
 | Param | Default | Meaning |
 |---|---|---|
-| `--design_file` | — | CSV of per-site result folders (required) |
+| `--input_files` | — | glob of the per-site result files, staged flat (required) |
 | `--phase` | `aggregate` | `consensus` (Phase 1) or `aggregate` (Phase 2) |
 | `--aggregation` | `fedavg` | vector combine rule: `fedavg` / `median` / `mean` |
 | `--min_sites` | majority | consensus threshold (Phase 1) |
-| `--oadr_cpep_container` | `ghcr.io/nih-nlm/oadr-cpep:0.1.0` | shared image |
+| `--from_site` | false | consensus from one site's selection (single-site, bespoke) |
+| `--container` | `ghcr.io/nih-nlm/oadr-cpep:latest` | shared package image |
 | `--outdir` | `results` | output directory |
+| `--publish_mode` | `copy` | `publishDir` mode |
 
 ## Layout
 
 ```
-main.nf                       Lifebit entry (paramsSummary, logo, AGGREGATION)
-workflows/aggregation.nf      staging + phase gate (consensus vs aggregate)
-modules/oadr_cpep/            consensus_features.nf, aggregate_vectors.nf
-modules/                      stage_files, generate_report, pipeline_metadata, utils/
-nextflow.config              params + shared-container binding
+main.nf              phase gate (consensus / aggregate), calls the two modules directly
+modules/oadr_cpep/   consensus_features.nf, aggregate_vectors.nf  (build explicit --features/--vector)
+nextflow.config      params + shared-container binding + the `local` profile
+environment.yml      conda env for local (no-Docker) testing
 ```
-
-This repo keeps the Lifebit platform scaffold (introspection metadata, file
-staging, reporting, executor/profile configs) and swaps the analysis step from
-the demo federated-CNN aggregator to the oadr-cpep consensus + parameter
-aggregation.
