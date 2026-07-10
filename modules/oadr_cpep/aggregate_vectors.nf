@@ -12,7 +12,7 @@
  * Input : path vector_files — the staged per-site vectors / forests
  * Output: path federated_* — federated vectors (.csv) and forest union (.pkl)
  */
-process AGGREGATE_VECTORS {
+process aggregate_vectors_process {
     tag "aggregate_vectors_${params.aggregation}"
     label 'oadr_cpep'
     containerOptions '--entrypoint ""'
