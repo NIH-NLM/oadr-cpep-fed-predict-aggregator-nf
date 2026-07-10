@@ -1,14 +1,9 @@
 # oadr-cpep-fed-predict-aggregator-nf
-
-The **coordinator (aggregator) workflow** for federated prediction of residual
-beta-cell function (C-peptide AUC) in Type 1 Diabetes. It collects the parameter
-files each institution produced with **oadr-cpep-fed-predict-site-nf** and combines
-them. Only model parameters — feature lists, coefficient vectors, trained forests —
-are read; no subject-level data is ever pooled.
-
-Same clean shape as the site workflow: each step is a **single-function Nextflow
-module** calling the `oadr-cpep` CLI, invoked directly from `main.nf`, all on the
-shared `ghcr.io/nih-nlm/oadr-cpep` image.
+=======
+The **aggregator workflow** for federated prediction of residual
+beta-cell function (C-peptide AUC) in Type 1 Diabetes. It collects the outputs produced with
+**oadr-cpep-fed-predict-site-nf**, and combines them. Only model parameters —
+feature lists, coefficient vectors, trained forests — are read. 
 
 ## Where it sits in the round trip
 
