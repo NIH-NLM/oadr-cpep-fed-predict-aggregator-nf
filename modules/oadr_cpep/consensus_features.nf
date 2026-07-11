@@ -13,7 +13,7 @@ process consensus_features_process {
     tag "consensus_features"
     label 'oadr_cpep'
     containerOptions '--entrypoint ""'
-    publishDir "${params.outdir}/consensus", mode: params.publish_mode
+    publishDir "${params.outdir}", mode: params.publish_mode
 
     input:
     path features_files
