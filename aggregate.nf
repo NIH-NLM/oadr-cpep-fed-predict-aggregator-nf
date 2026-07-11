@@ -19,6 +19,9 @@
 
 nextflow.enable.dsl = 2
 
+// Output directory — default set here in the entry script (not a nextflow.config params knob)
+params.outdir = 'results'
+
 include { aggregate_vectors_process } from './modules/oadr_cpep/aggregate_vectors.nf'
 
 workflow {
