@@ -92,9 +92,9 @@ docs/                Sphinx (auto-generated from the .nf docblocks) → GitHub P
 
 ## Companion repositories
 
-* Main Python Package: [oadr-cpep](https://github.com/NIH-NLM/oadr-cpep) (here)
+* Main Python Package: [oadr-cpep](https://github.com/NIH-NLM/oadr-cpep) 
 * Site specific workflow: [oadr-cpep-fed-predict-site-nf](https://github.com/NIH-NLM/oadr-cpep-fed-predict-site-nf)
-* Consensus and Aggregation specific workflow: [oadr-cpep-fed-predict-site-nf](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregation-nf)
+* Consensus and Aggregation specific workflow: [oadr-cpep-fed-predict-site-nf](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregation-nf) (here)
 
 ## Citation
 
