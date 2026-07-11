@@ -18,20 +18,65 @@ Docs: <https://nih-nlm.github.io/oadr-cpep-fed-predict-aggregator-nf>
 
 ## Run
 
-```bash
-nextflow run aggregate.nf --aggregation fedavg --input_files 'results/**/*_vector.csv'
-nextflow run consensus.nf                      --input_files 'results/**/*_selected_features.csv'
+Point it at the per-site files **either** way:
+
+**1. A samplesheet** (best on Lifebit / CloudOS — one short param; the long `s3://…`
+paths live in the CSV, not the command line). The CSV has a single `file` column,
+one path per row:
+
+```
+# vectors.csv
+file
+s3://bucket/…/SDY524_from-SDY524_panelB_ridge_vector.csv
+s3://bucket/…/SDY569_from-SDY524_panelB_ridge_vector.csv
+s3://bucket/…/SDY524_from-SDY524_panelB_rf.pkl
+s3://bucket/…/SDY569_from-SDY524_panelB_rf.pkl
 ```
 
-`--input_files` is a glob Nextflow uses to gather the per-site files; each is handed
-to the CLI explicitly (one `--vector` / `--features` per file). Add `-profile local`
-to run without Docker (see `environment.yml`).
+```bash
+nextflow run aggregate.nf --aggregation fedavg --sheet vectors.csv
+nextflow run consensus.nf                      --sheet selections.csv
+```
+
+**2. A comma-separated list** (handy for quick local runs):
+
+```bash
+nextflow run aggregate.nf --aggregation fedavg \
+  --vectors 'SDY524_..._ridge_vector.csv,SDY569_..._ridge_vector.csv,SDY524_..._rf.pkl,SDY569_..._rf.pkl'
+nextflow run consensus.nf \
+  --features 'SDY524_panelB_selected_features.csv,SDY569_panelB_selected_features.csv'
+```
+
+Either way each file is explicit — handed to the CLI as its own `--vector` /
+`--features` (like `oadr-cpep`), no directory or glob, so it behaves the same on
+local disk or an S3 bucket.
+
+## Test locally on a Mac (no Docker)
+
+`-profile local` disables Docker and runs the `oadr-cpep` CLI from your conda env,
+so set that env up **in order** — create it, **activate** it, *then* install the
+package into it (installing before activating lands it in `base`):
+
+```bash
+conda env create -f environment.yml   # 1. build the env
+conda activate oadr-cpep-nf           # 2. ACTIVATE it (before the next step)
+pip install -e ../oadr-cpep           # 3. install oadr-cpep INTO the active env
+
+nextflow run aggregate.nf -profile local \
+  --vectors 'a_ridge_vector.csv,b_ridge_vector.csv,a_rf.pkl,b_rf.pkl'
+```
+
+Drop `-profile local` for the containerized run (Lifebit / the published image).
+Note: Nextflow's own options take **one** dash (`-profile`); your params take
+**two** (`--vectors`).
 
 ## Parameters
 
 | Param | Default | Meaning |
 |---|---|---|
-| `--input_files` | — | glob of the per-site files to gather (required) |
+| `--sheet` | — | a CSV with a `file` column, one path per row (either workflow) |
+| `--vectors` | — | `aggregate.nf`: comma-separated list of per-site vector/forest files |
+| `--features` | — | `consensus.nf`: comma-separated list of per-site selection files |
 | `--aggregation` | `fedavg` | `aggregate.nf` combine rule: `fedavg` / `median` / `mean` |
 | `--outdir` | `results` | publishDir destination |
 

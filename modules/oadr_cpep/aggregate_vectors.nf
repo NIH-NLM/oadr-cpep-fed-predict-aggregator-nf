@@ -16,7 +16,7 @@ process aggregate_vectors_process {
     tag "aggregate_vectors_${params.aggregation}"
     label 'oadr_cpep'
     containerOptions '--entrypoint ""'
-    publishDir "${params.outdir}/federated_model", mode: params.publish_mode
+    publishDir "${params.outdir}", mode: params.publish_mode
 
     input:
     path vector_files
