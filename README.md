@@ -78,7 +78,6 @@ Note: Nextflow's own options take **one** dash (`-profile`); your params take
 | `--vectors` | — | `aggregate.nf`: comma-separated list of per-site vector/forest files |
 | `--features` | — | `consensus.nf`: comma-separated list of per-site selection files |
 | `--aggregation` | `fedavg` | `aggregate.nf` combine rule: `fedavg` / `median` / `mean` |
-| `--outdir` | `results` | publishDir destination |
 
 ## Layout
 

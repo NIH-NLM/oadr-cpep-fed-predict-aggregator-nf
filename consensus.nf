@@ -18,6 +18,9 @@
 
 nextflow.enable.dsl = 2
 
+// Output directory — default set here in the entry script (not a nextflow.config params knob)
+params.outdir = 'results'
+
 include { consensus_features_process } from './modules/oadr_cpep/consensus_features.nf'
 
 workflow {
