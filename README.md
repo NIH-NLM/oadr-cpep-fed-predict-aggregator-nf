@@ -1,3 +1,7 @@
+[![Build and Deploy Sphinx Documentation](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/docs.yml/badge.svg)](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/docs.yml)
+[![Check pull request source branch](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/check_branches.yml/badge.svg)](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/check_branches.yml)
+[![reviewdog misspell](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/misspell.yml/badge.svg)](https://github.com/NIH-NLM/oadr-cpep-fed-predict-aggregator-nf/actions/workflows/misspell.yml)
+
 # oadr-cpep-fed-predict-aggregator-nf
 
 The **shared, federated step**. oadr-cpep is split in two: each institution runs
